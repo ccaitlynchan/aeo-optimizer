@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AEO Optimizer</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f7f7f5; --bg3: #f0efe9;
+    --text: #1a1a1a; --text2: #555550; --text3: #999990;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.2);
+    --success-bg: #EAF3DE; --success-text: #3B6D11;
+    --warn-bg: #FAEEDA; --warn-text: #854F0B;
+    --fail-bg: #FCEBEB; --fail-text: #A32D2D;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 700px; margin: 0 auto; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 24px; font-weight: 500; margin-bottom: 4px; }
+  .header p { font-size: 14px; color: var(--text2); }
+  .card { background: var(--bg); border-radius: var(--radius-lg); border: 0.5px solid var(--border); padding: 1.5rem; margin-bottom: 1rem; }
+  .step-bar { display: flex; align-items: center; margin-bottom: 2rem; }
+  .pip { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); white-space: nowrap; }
+  .pip.active { color: var(--text); font-weight: 500; }
+  .pip.done { color: var(--success-text); }
+  .pip-dot { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; color: var(--text3); }
+  .pip.active .pip-dot { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .pip.done .pip-dot { background: var(--success-bg); color: var(--success-text); border-color: var(--success-text); }
+  .pip-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; max-width: 40px; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+  .field .sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  input[type=text], select, textarea { width: 100%; font-size: 14px; padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); color: var(--text); height: 40px; outline: none; font-family: inherit; }
+  input[type=text]:focus, select:focus, textarea:focus { border-color: var(--border2); }
+  textarea { height: 140px; padding: 12px; resize: vertical; line-height: 1.6; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 1rem; align-items: center; flex-wrap: wrap; }
+  button.primary { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; border-radius: var(--radius); border: none; background: var(--text); color: var(--bg); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.secondary { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; font-family: inherit; }
+  button.ghost { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius); border: none; background: transparent; color: var(--text3); font-size: 12px; cursor: pointer; font-family: inherit; }
+  .profile-banner { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-radius: var(--radius); background: var(--bg2); border: 0.5px solid var(--border); margin-bottom: 1.5rem; }
+  .pb-name { font-size: 14px; font-weight: 500; }
+  .pb-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .score-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .score-card { background: var(--bg2); border-radius: var(--radius); padding: 14px 12px; }
+  .sc-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .sc-val { font-size: 20px; font-weight: 500; }
+  .sc-unit { font-size: 13px; color: var(--text3); }
+  .audit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem; }
+  .audit-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--radius); border: 0.5px solid var(--border); background: var(--bg); }
+  .a-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 10px; font-weight: 500; }
+  .i-pass { background: var(--success-bg); color: var(--success-text); }
+  .i-warn { background: var(--warn-bg); color: var(--warn-text); }
+  .i-fail { background: var(--fail-bg); color: var(--fail-text); }
+  .a-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+  .a-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .a-weight { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .out-block { background: var(--bg2); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; position: relative; }
+  .out-label { font-size: 11px; font-weight: 500; color: var(--text3); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; }
+  .out-note { font-size: 12px; color: var(--text3); margin-bottom: 8px; }
+  .out-content { font-size: 14px; color: var(--text); line-height: 1.7; white-space: pre-wrap; padding-right: 64px; }
+  .copy-btn { position: absolute; top: 12px; right: 12px; padding: 4px 10px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg); font-size: 12px; color: var(--text2); cursor: pointer; font-family: inherit; }
+  .conf-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--radius); margin-bottom: 8px; }
+  .conf-high { background: var(--success-bg); color: var(--success-text); }
+  .conf-med { background: var(--warn-bg); color: var(--warn-text); }
+  .conf-low { background: var(--fail-bg); color: var(--fail-text); }
+  .badge-overall { display: inline-block; padding: 5px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500; margin-bottom: 1rem; }
+  .badge-good { background: var(--success-bg); color: var(--success-text); }
+  .badge-mid { background: var(--warn-bg); color: var(--warn-text); }
+  .badge-poor { background: var(--fail-bg); color: var(--fail-text); }
+  .disclaimer { font-size: 12px; color: var(--text3); background: var(--bg2); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem; line-height: 1.6; border: 0.5px solid var(--border); }
+  .loading { display: flex; align-items: center; gap: 10px; padding: 1.5rem 0; color: var(--text2); font-size: 14px; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err { padding: 12px 16px; border-radius: var(--radius); background: var(--fail-bg); color: var(--fail-text); font-size: 13px; margin-top: 1rem; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 1.5rem 0; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .faq-item { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>AEO optimizer</h1>
+    <p>Audit any product listing for AI shopping visibility and generate optimized content.</p>
+  </div>
+
+  <div class="step-bar">
+    <div class="pip active" id="pip1"><div class="pip-dot">1</div> Brand profile</div>
+    <div class="pip-line"></div>
+    <div class="pip" id="pip2"><div class="pip-dot">2</div> Product</div>
+    <div class="pip-line"></div>
+    <div class="pip" id="pip3"><div class="pip-dot">3</div> Clarify</div>
+    <div class="pip-line"></div>
+    <div class="pip" id="pip4"><div class="pip-dot">4</div> Results</div>
+  </div>
+
+  <div class="panel active" id="panel1">
+    <div id="profile-banner-area"></div>
+    <div class="card" id="profile-form">
+      <p class="section-label">Brand profile</p>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6;">Fill this out once — it saves automatically and pre-fills future audits.</p>
+      <div class="row2">
+        <div class="field"><label>Brand name</label><input type="text" id="p_brand" placeholder="e.g. Lazy Hype" /></div>
+        <div class="field"><label>Product category</label>
+          <select id="p_category">
+            <option value="">Select category</option>
+            <option>Apparel & activewear</option>
+            <option>Beauty & skincare</option>
+            <option>Home & lifestyle</option>
+            <option>Electronics & accessories</option>
+            <option>Food & beverage</option>
+            <option>Health & wellness</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Standard size range</label><input type="text" id="p_sizes" placeholder="e.g. XS–XL, S/M/L, or One Size" /></div>
+      <div class="field"><label>Core materials / fabric</label><input type="text" id="p_materials" placeholder="e.g. 75% RPET, 25% Spandex" /></div>
+      <div class="field"><label>Key brand differentiators</label><input type="text" id="p_diff" placeholder="e.g. Ethically made in USA, sustainable, B-Corp certified" /></div>
+      <div class="field"><label>Review status</label>
+        <select id="p_reviews">
+          <option value="">Select</option>
+          <option>No on-site reviews yet</option>
+          <option>Have reviews but not schema-marked</option>
+          <option>Have reviews with schema markup</option>
+          <option>Active third-party reviews (Reddit, blogs, press)</option>
+        </select>
+      </div>
+      <div class="field"><label>Brand voice / tone</label><input type="text" id="p_tone" placeholder="e.g. aspirational, confident, sustainability-focused" /></div>
+      <div class="field"><label>Google Merchant Center feed</label>
+        <select id="p_feed">
+          <option value="">Select</option>
+          <option>Connected and active</option>
+          <option>Connected but needs verification</option>
+          <option>Not connected</option>
+          <option>Not sure</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="primary" onclick="saveProfile()"><i class="ti ti-device-floppy"></i> Save profile & continue</button>
+      </div>
+      <div id="err1" style="display:none;" class="err"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel2">
+    <div id="p2-banner"></div>
+    <div class="card">
+      <div class="field"><label>Product description</label><textarea id="desc" placeholder="Paste your product name, description, existing bullet points, and any attributes. The more detail, the better the output."></textarea><p class="sub">Works with any e-commerce product.</p></div>
+      <div class="field"><label>Product name <span style="font-weight:400;color:var(--text3)">(optional)</span></label><input type="text" id="prod_name" placeholder="e.g. Hot Yoga Set" /></div>
+      <div class="btn-row">
+        <button class="primary" onclick="goStep3()"><i class="ti ti-arrow-right"></i> Continue</button>
+        <button class="secondary" onclick="setStep(1)"><i class="ti ti-arrow-left"></i> Edit profile</button>
+      </div>
+      <div id="err2" style="display:none;" class="err"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel3">
+    <div class="card">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem;line-height:1.6;">Answer what you can — leave anything unknown blank and the agent will flag it as an assumption.</p>
+      <div id="q-container"></div>
+      <div class="btn-row">
+        <button class="primary" id="gen-btn" onclick="runGenerate()"><i class="ti ti-sparkles"></i> Analyze & generate</button>
+        <button class="secondary" onclick="setStep(2)"><i class="ti ti-arrow-left"></i> Back</button>
+      </div>
+      <div id="err3" style="display:none;" class="err"></div>
+      <div id="loading3" style="display:none;"><div class="loading"><div class="spinner"></div><span id="load-msg">Analyzing listing...</span></div></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel4">
+    <div class="card" id="results-content"></div>
+  </div>
+</div>
+
+<script>
+let profile = null;
+
+const CAT_QUESTIONS = {
+  "Apparel & activewear": [
+    { id: "activity", label: "Activity or use case for this specific product", placeholder: "e.g. yoga, hot yoga, pilates, running, lounge" },
+    { id: "silhouette", label: "Silhouette and fit details", placeholder: "e.g. high waist, asymmetrical neck, tight, relaxed, cropped" },
+    { id: "support", label: "Support level", placeholder: "e.g. light-to-medium, high support, unpadded" },
+    { id: "fit_guide", label: "Does this run true to size?", placeholder: "e.g. true to size, runs small, recommend sizing up" },
+    { id: "unique", label: "Anything unique about this specific product?", placeholder: "e.g. double layer, custom branding available, reversible" },
+  ],
+  "Beauty & skincare": [
+    { id: "skintype", label: "Skin types this product is for", placeholder: "e.g. oily, dry, combination, all skin types" },
+    { id: "concern", label: "Skin concern it addresses", placeholder: "e.g. acne, hyperpigmentation, anti-aging, hydration" },
+    { id: "keyingredients", label: "Key active ingredients and concentrations", placeholder: "e.g. niacinamide 10%, hyaluronic acid 2%" },
+    { id: "howto", label: "How and when to use it", placeholder: "e.g. apply AM and PM after cleansing" },
+    { id: "unique", label: "What makes this product unique in your line?", placeholder: "e.g. fragrance-free, clinically tested" },
+  ],
+  "default": [
+    { id: "usecase", label: "Primary use case for this product", placeholder: "Describe the main activity or problem it solves" },
+    { id: "specs", label: "Key dimensions, specs, or measurements", placeholder: "e.g. 12x8x4 inches, 2.3 lbs, 500ml" },
+    { id: "compatibility", label: "Compatibility or fit considerations", placeholder: "e.g. fits standard US outlets, iOS/Android compatible" },
+    { id: "unique", label: "What makes this product unique?", placeholder: "e.g. limited edition, new formula, upgraded design" },
+  ]
+};
+
+function getQs(cat) { return CAT_QUESTIONS[cat] || CAT_QUESTIONS["default"]; }
+
+function loadProfile() {
+  try {
+    const saved = localStorage.getItem('aeo_brand_profile');
+    if (saved) { profile = JSON.parse(saved); showProfileBanner(); }
+  } catch(e) {}
+}
+
+function showProfileBanner() {
+  if (!profile) return;
+  document.getElementById('profile-banner-area').innerHTML = `
+    <div class="profile-banner">
+      <div><div class="pb-name">${profile.brand}</div><div class="pb-sub">${profile.category||''} · ${profile.sizes||''} · ${profile.materials||''}</div></div>
+      <div style="display:flex;gap:8px;">
+        <button class="secondary" onclick="useProfile()" style="font-size:12px;padding:6px 12px;">Use this profile</button>
+        <button class="ghost" onclick="editProfile()"><i class="ti ti-edit"></i> Edit</button>
+      </div>
+    </div>`;
+  document.getElementById('profile-form').style.display = 'none';
+}
+
+function editProfile() {
+  document.getElementById('profile-banner-area').innerHTML = '';
+  document.getElementById('profile-form').style.display = 'block';
+  if (profile) {
+    document.getElementById('p_brand').value = profile.brand||'';
+    document.getElementById('p_category').value = profile.category||'';
+    document.getElementById('p_sizes').value = profile.sizes||'';
+    document.getElementById('p_materials').value = profile.materials||'';
+    document.getElementById('p_diff').value = profile.diff||'';
+    document.getElementById('p_reviews').value = profile.reviews||'';
+    document.getElementById('p_tone').value = profile.tone||'';
+    document.getElementById('p_feed').value = profile.feed||'';
+  }
+}
+
+function saveProfile() {
+  const brand = document.getElementById('p_brand').value.trim();
+  if (!brand) { showErr('err1','Please enter a brand name.'); return; }
+  profile = {
+    brand, category: document.getElementById('p_category').value,
+    sizes: document.getElementById('p_sizes').value.trim(),
+    materials: document.getElementById('p_materials').value.trim(),
+    diff: document.getElementById('p_diff').value.trim(),
+    reviews: document.getElementById('p_reviews').value,
+    tone: document.getElementById('p_tone').value.trim(),
+    feed: document.getElementById('p_feed').value,
+  };
+  try { localStorage.setItem('aeo_brand_profile', JSON.stringify(profile)); } catch(e) {}
+  useProfile();
+}
+
+function useProfile() {
+  document.getElementById('p2-banner').innerHTML = `
+    <div class="profile-banner" style="margin-bottom:1.5rem;">
+      <div><div class="pb-name">${profile.brand}</div><div class="pb-sub">${profile.category||''} · ${profile.sizes||''} · ${profile.materials||''}</div></div>
+      <button class="ghost" onclick="setStep(1)"><i class="ti ti-edit"></i> Edit profile</button>
+    </div>`;
+  setStep(2);
+}
+
+function goStep3() {
+  const desc = document.getElementById('desc').value.trim();
+  if (!desc) { showErr('err2','Please paste a product description.'); return; }
+  const qs = getQs(profile?.category||'');
+  document.getElementById('q-container').innerHTML = qs.map(q => `
+    <div class="field"><label>${q.label}</label><input type="text" id="q_${q.id}" placeholder="${q.placeholder}" /></div>
+  `).join('') + `<div class="field"><label>Anything else specific to this product? <span style="font-weight:400;color:var(--text3)">(optional)</span></label><input type="text" id="q_extra" placeholder="e.g. limited edition colorway, price point, new feature" /></div>`;
+  setStep(3);
+}
+
+async function runGenerate() {
+  const desc = document.getElementById('desc').value.trim();
+  const prodName = document.getElementById('prod_name').value.trim();
+  const qs = getQs(profile?.category||'');
+  const answers = qs.map(q => {
+    const val = document.getElementById('q_'+q.id)?.value?.trim();
+    return val ? `${q.label}: ${val}` : `${q.label}: [not provided — flag as assumption]`;
+  });
+  const extra = document.getElementById('q_extra')?.value?.trim();
+  if (extra) answers.push('Additional context: '+extra);
+
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('loading3').style.display = 'block';
+  const msgs = ['Analyzing listing...','Scoring AEO dimensions...','Generating optimized content...','Almost done...'];
+  let mi = 0;
+  const loadEl = document.getElementById('load-msg');
+  const iv = setInterval(() => { mi=(mi+1)%msgs.length; loadEl.textContent=msgs[mi]; }, 2000);
+
+  const brandContext = profile ? `Brand profile:\n- Brand: ${profile.brand}\n- Category: ${profile.category||'not specified'}\n- Sizes: ${profile.sizes||'not specified'}\n- Materials: ${profile.materials||'not specified'}\n- Differentiators: ${profile.diff||'not specified'}\n- Reviews: ${profile.reviews||'not specified'}\n- Tone: ${profile.tone||'not specified'}\n- Merchant Center: ${profile.feed||'not specified'}` : 'No brand profile.';
+
+  const prompt = `You are an AEO (Answer Engine Optimization) expert for e-commerce. Scoring weights are research-backed: authority/reviews=35% (SE Ranking 129k domains), attribute completeness=30% (ChatGPT Shopping research), schema markup=20%, FAQ/structured content=15% (Foglift 240 scans).
+
+Return ONLY valid JSON, no markdown, no backticks:
+{"productName":"string","overallScore":0-100,"scores":{"authority":0-100,"attributes":0-100,"schema":0-100,"faq":0-100},"auditItems":[{"category":"string","weight":"35%|30%|20%|15%","status":"pass|warn|fail","detail":"string","researchBacking":"string"}],"clarifyingFlags":["string"],"optimized":{"seoTitle":"string under 60 chars","metaDescription":"string under 160 chars","attributeParagraph":"2-3 sentences factual attribute-first no price no lifestyle fluff","brandVoice":"1-2 sentences brand tone","bulletFeatures":["5-6 bullets"],"fabricCare":"string","faq":[{"q":"string","a":"string","confidence":"high|medium|low"},{"q":"string","a":"string","confidence":"high|medium|low"},{"q":"string","a":"string","confidence":"high|medium|low"}]}}
+
+4 audit categories: 1) Authority & reviews (35%) 2) Attribute completeness (30%) 3) Schema markup (20%) 4) FAQ & structured content (15%)
+Confidence: high=confirmed, medium=inferred, low=assumed.
+
+${brandContext}
+Product-specific: ${answers.join(' | ')}
+${prodName?'Product name: '+prodName:''}
+Description: ${desc}`;
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] })
+    });
+    clearInterval(iv);
+    document.getElementById('loading3').style.display = 'none';
+    document.getElementById('gen-btn').disabled = false;
+    const data = await res.json();
+    if (!data.content?.[0]?.text) throw new Error('No response');
+    let raw = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'');
+    renderResults(JSON.parse(raw));
+    setStep(4);
+  } catch(e) {
+    clearInterval(iv);
+    document.getElementById('loading3').style.display = 'none';
+    document.getElementById('gen-btn').disabled = false;
+    showErr('err3', 'Analysis failed: '+e.message);
+  }
+}
+
+function renderResults(r) {
+  const score = Math.round(r.overallScore||0);
+  const bc = score>=70?'badge-good':score>=40?'badge-mid':'badge-poor';
+  const bl = score>=70?'Good AI visibility':score>=40?'Needs improvement':'Poor AI visibility';
+  const s = r.scores||{};
+
+  const auditHTML = (r.auditItems||[]).map(item => {
+    const ic = item.status==='pass'?'i-pass':item.status==='warn'?'i-warn':'i-fail';
+    const sym = item.status==='pass'?'✓':item.status==='warn'?'~':'✗';
+    return `<div class="audit-item"><div class="a-icon ${ic}">${sym}</div><div style="flex:1"><div class="a-name">${item.category}</div><div class="a-detail">${item.detail}</div><div class="a-weight">${item.weight} weight · ${item.researchBacking||''}</div></div></div>`;
+  }).join('');
+
+  const flagsHTML = (r.clarifyingFlags||[]).length>0
+    ? `<div class="disclaimer"><strong>Assumptions made — verify before publishing:</strong><br>${(r.clarifyingFlags||[]).map(f=>'· '+f).join('<br>')}</div>` : '';
+
+  const opt = r.optimized||{};
+  const bullets = (opt.bulletFeatures||[]).map(b=>'· '+b).join('\n');
+  const outBlocks = [
+    {label:'SEO title tag',content:opt.seoTitle||'',note:'Goes in page metadata — not the visible page heading.'},
+    {label:'Meta description',content:opt.metaDescription||'',note:'Shown in Google search results under the page title.'},
+    {label:'Attribute-first description',content:opt.attributeParagraph||'',note:null},
+    {label:'Brand voice',content:opt.brandVoice||'',note:null},
+    {label:'Key features',content:bullets,note:null},
+    {label:'Fabrication & care',content:opt.fabricCare||'',note:null},
+  ];
+
+  const outHTML = outBlocks.map((b,i)=>`
+    <div class="out-block">
+      <div class="out-label">${b.label}</div>
+      ${b.note?`<div class="out-note">${b.note}</div>`:''}
+      <div class="out-content" id="ob${i}">${b.content}</div>
+      <button class="copy-btn" onclick="copyOut(${i})">Copy</button>
+    </div>`).join('');
+
+  const faqHTML = (opt.faq||[]).map((f,i)=>{
+    const cc = f.confidence==='high'?'conf-high':f.confidence==='medium'?'conf-med':'conf-low';
+    return `<div class="faq-item" id="faqitem${i}"><span class="conf-badge ${cc}">${f.confidence||'medium'} confidence</span><div style="font-size:14px;font-weight:500;margin-bottom:4px;">Q: ${f.q}</div><div style="font-size:14px;color:var(--text2);line-height:1.6;">A: ${f.a}</div></div>`;
+  }).join('');
+
+  document.getElementById('results-content').innerHTML = `
+    <p class="section-label">Audit scorecard</p>
+    <div class="badge-overall ${bc}">${bl} · ${score}/100</div>
+    <div class="score-grid">
+      <div class="score-card"><div class="sc-label">Authority</div><div class="sc-val">${Math.round(s.authority||0)}<span class="sc-unit">/100</span></div></div>
+      <div class="score-card"><div class="sc-label">Attributes</div><div class="sc-val">${Math.round(s.attributes||0)}<span class="sc-unit">/100</span></div></div>
+      <div class="score-card"><div class="sc-label">Schema</div><div class="sc-val">${Math.round(s.schema||0)}<span class="sc-unit">/100</span></div></div>
+      <div class="score-card"><div class="sc-label">FAQ</div><div class="sc-val">${Math.round(s.faq||0)}<span class="sc-unit">/100</span></div></div>
+    </div>
+    <div class="audit-list">${auditHTML}</div>
+    <div class="divider"></div>
+    <p class="section-label">Optimized content</p>
+    ${flagsHTML}${outHTML}
+    <div class="out-block"><div class="out-label">FAQ block</div><div id="faq-all">${faqHTML}</div><button class="copy-btn" onclick="copyFaq()">Copy all</button></div>
+    <div class="disclaimer" style="margin-top:1rem;">Scores are model-estimated based on published AEO research. Content flagged medium or low confidence should be verified before publishing. Always review size measurements and specific claims before use.</div>
+    <div class="btn-row" style="margin-top:1rem;">
+      <button class="secondary" onclick="newProduct()"><i class="ti ti-plus"></i> Audit another product</button>
+    </div>`;
+}
+
+function copyOut(i) {
+  const el = document.getElementById('ob'+i);
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    const btn = el.parentElement.querySelector('.copy-btn');
+    const orig = btn.textContent; btn.textContent='Copied!';
+    setTimeout(()=>{ btn.textContent=orig; },1500);
+  });
+}
+
+function copyFaq() {
+  const el = document.getElementById('faq-all');
+  navigator.clipboard.writeText(el.innerText).then(()=>{ alert('FAQ copied!'); });
+}
+
+function newProduct() {
+  document.getElementById('desc').value='';
+  document.getElementById('prod_name').value='';
+  setStep(2);
+}
+
+function setStep(n) {
+  for(let i=1;i<=4;i++){
+    document.getElementById('panel'+i).classList.toggle('active',i===n);
+    const pip=document.getElementById('pip'+i);
+    pip.classList.remove('active','done');
+    if(i<n) pip.classList.add('done');
+    else if(i===n) pip.classList.add('active');
+    pip.querySelector('.pip-dot').textContent=i<n?'✓':i;
+  }
+}
+
+function showErr(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; setTimeout(()=>{ el.style.display='none'; },6000); }
+
+loadProfile();
+</script>
+</body>
+</html>
