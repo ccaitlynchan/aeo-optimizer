@@ -323,7 +323,10 @@ Description: ${desc}`;
     document.getElementById('gen-btn').disabled = false;
     const data = await res.json();
     if (!data.content?.[0]?.text) throw new Error('No response');
-    let raw = data.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'');
+    let raw = data.content[0].text.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+    raw = jsonMatch[0];
     renderResults(JSON.parse(raw));
     setStep(4);
   } catch(e) {
